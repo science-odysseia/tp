@@ -119,9 +119,9 @@ def main(page: ft.Page):
                         [
                             ft.Text("학생 자퇴 데이터 분석 시스템", size=42, weight="bold", color="white", text_align="left"),
                             ft.Container(height=40),
-                            ft.FilledButton("자유 분석 모드 실행하기", icon=ft.Icons.ANALYTICS, on_click=start_app, width=420, height=80, style=ft.ButtonStyle(bgcolor={"":"#cc0021f2"}, color={"":"white"})),
+                            ft.FilledButton("자유 분석 모드 실행하기", icon=ft.Icons.ANALYTICS, on_click=start_app, width=420, height=80, style=ft.ButtonStyle(bgcolor={"":"#cc0021f2"}, color={"":"white"}, text_style=ft.TextStyle(size=30, weight="bold"), icon_size = 35)),
                             ft.Container(height=20),
-                            ft.OutlinedButton("대표 차트 5개 요약 보기", icon=ft.Icons.INSERT_CHART_OUTLINED, on_click=show_summary_charts, width=420, height=80, style=ft.ButtonStyle(bgcolor={"":"#ccffffff"})),
+                            ft.OutlinedButton("대표 차트 5개 요약 보기", icon=ft.Icons.INSERT_CHART_OUTLINED, on_click=show_summary_charts, width=420, height=80, style=ft.ButtonStyle(bgcolor={"":"#ccffffff"}, text_style=ft.TextStyle(size=30, weight="bold"), icon_size = 35)),
                         ],
                         horizontal_alignment="start", 
                         alignment="end",
