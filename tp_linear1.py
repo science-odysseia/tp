@@ -12,7 +12,7 @@ def main(page: ft.Page):
     page.padding = 20
     page.theme_mode = ft.ThemeMode.LIGHT
 
-    data_path = "/home/scienceodysseia/py_work/data/student_dropout_dataset_v3.csv"
+    data_path = r"/home/scienceodysseia/py_work/tp/student_dropout_dataset_v3.csv"
 
     try:
         df = pd.read_csv(data_path)
