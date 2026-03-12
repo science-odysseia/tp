@@ -59,7 +59,58 @@ def main(page: ft.Page):
 
         return "categorical"
 
-    def make_bar_chart(series: pd.Series):
+
+    def nice_step(min_val, max_val, target_ticks=5):
+        span = float(max_val) - float(min_val)
+        if span <= 0:
+            return 1.0
+
+        raw = span / target_ticks
+        power = 10 ** np.floor(np.log10(raw))
+
+        for mult in [1, 2, 5, 10]:
+            step = mult * power
+            if raw <= step:
+                return float(step)
+
+        return float(10 * power)
+
+    def calc_simple_regression_stats(x_vals, y_vals):
+        x = np.asarray(x_vals, dtype=float)
+        y = np.asarray(y_vals, dtype=float)
+
+        mask = np.isfinite(x) & np.isfinite(y)
+        x = x[mask]
+        y = y[mask]
+
+        n = len(x)
+
+        if n < 2:
+            return {"n": n, "r": np.nan, "r2": np.nan, "f": np.nan}
+
+        if np.isclose(np.std(x), 0) or np.isclose(np.std(y), 0):
+            return {"n": n, "r": np.nan, "r2": np.nan, "f": np.nan}
+
+        r = float(np.corrcoef(x, y)[0, 1])
+        r2 = float(r ** 2)
+
+        if n <= 2:
+            f_val = np.nan
+        elif np.isclose(1 - r2, 0):
+            f_val = np.inf
+        else:
+            f_val = float((r2 / (1 - r2)) * (n - 2))
+
+        return {"n": n, "r": r, "r2": r2, "f": f_val}
+
+    def fmt_stat(v):
+        if pd.isna(v):
+            return "N/A"
+        if np.isinf(v):
+            return "∞"
+        return f"{v:.4f}"
+
+    def make_bar_chart(series: pd.Series, x_name: str, y_name: str):
         series = series.dropna()
 
         if series.empty:
@@ -71,7 +122,49 @@ def main(page: ft.Page):
         if max_y < 1.0:
             max_y = 1.0
 
+        y_step = nice_step(0, max_y, target_ticks=5)
+
         return fch.BarChart(
+            interactive=True,
+            min_y=0,
+            max_y=max_y,
+            border=ft.Border.all(1, ft.Colors.GREY_300),
+
+            horizontal_grid_lines=fch.ChartGridLines(
+                interval=y_step,
+                color=ft.Colors.GREY_300,
+                width=1,
+                dash_pattern=[3, 3]
+            ),
+            vertical_grid_lines=fch.ChartGridLines(
+                interval=1,
+                color=ft.Colors.GREY_200,
+                width=1,
+                dash_pattern=[3, 3]
+            ),
+
+            left_axis=fch.ChartAxis(
+                title=ft.Text(y_name, size=12, weight=ft.FontWeight.BOLD),
+                title_size=32,
+                show_min=True,
+                show_max=True
+            ),
+
+            bottom_axis=fch.ChartAxis(
+                title=ft.Text(x_name, size=12, weight=ft.FontWeight.BOLD),
+                title_size=32,
+                labels=[
+                    fch.ChartAxisLabel(
+                        value=i,
+                        label=ft.Text(str(k), size=10)
+                    )
+                    for i, k in enumerate(series.index)
+                ],
+                label_size=70,
+                show_min=True,
+                show_max=True
+            ),
+
             groups=[
                 fch.BarChartGroup(
                     x=i,
@@ -86,19 +179,9 @@ def main(page: ft.Page):
                 )
                 for i, v in enumerate(series.values)
             ],
-            max_y=max_y,
-            bottom_axis=fch.ChartAxis(
-                labels=[
-                    fch.ChartAxisLabel(
-                        value=i,
-                        label=ft.Text(str(k), size=10)
-                    )
-                    for i, k in enumerate(series.index)
-                ]
-            )
         )
 
-    def make_line_chart(x_vals, y_vals, y_name: str):
+    def make_line_chart(x_vals, y_vals, x_name: str, y_name: str):
         x = np.array(x_vals, dtype=float)
         y = np.array(y_vals, dtype=float)
 
@@ -119,6 +202,8 @@ def main(page: ft.Page):
         x_line = np.linspace(x.min(), x.max(), 60)
         y_line = model.predict(x_line.reshape(-1, 1))
 
+        stats = calc_simple_regression_stats(x, y)
+
         if y_name == "Dropout":
             min_y = 0
             max_y = 1
@@ -129,11 +214,44 @@ def main(page: ft.Page):
             min_y = y_all_min - pad
             max_y = y_all_max + pad
 
+        x_step = nice_step(float(x.min()), float(x.max()), target_ticks=6)
+        y_step = nice_step(float(min_y), float(max_y), target_ticks=5)
+
         chart = fch.LineChart(
+            interactive=True,
             min_x=float(x.min()),
             max_x=float(x.max()),
-            min_y=min_y,
-            max_y=max_y,
+            min_y=float(min_y),
+            max_y=float(max_y),
+            border=ft.Border.all(1, ft.Colors.GREY_300),
+
+            horizontal_grid_lines=fch.ChartGridLines(
+                interval=y_step,
+                color=ft.Colors.GREY_300,
+                width=1,
+                dash_pattern=[3, 3]
+            ),
+            vertical_grid_lines=fch.ChartGridLines(
+                interval=x_step,
+                color=ft.Colors.GREY_200,
+                width=1,
+                dash_pattern=[3, 3]
+            ),
+
+            left_axis=fch.ChartAxis(
+                title=ft.Text(y_name, size=12, weight=ft.FontWeight.BOLD),
+                title_size=32,
+                show_min=True,
+                show_max=True
+            ),
+
+            bottom_axis=fch.ChartAxis(
+                title=ft.Text(x_name, size=12, weight=ft.FontWeight.BOLD),
+                title_size=32,
+                show_min=True,
+                show_max=True
+            ),
+
             data_series=[
                 fch.LineChartData(
                     points=[
@@ -156,13 +274,23 @@ def main(page: ft.Page):
             ]
         )
 
-        eq_text = ft.Text(
-            f"회귀식: y = {model.coef_[0]:.4f}x + {model.intercept_:.4f}",
-            size=12,
-            color=ft.Colors.GREY_700
+        stats_view = ft.Row(
+            [
+                ft.Text(
+                    f"회귀식: y = {model.coef_[0]:.4f}x + {model.intercept_:.4f}",
+                    size=12,
+                    color=ft.Colors.GREY_800
+                ),
+                ft.Text(f"R = {fmt_stat(stats['r'])}", size=12, color=ft.Colors.GREY_800),
+                ft.Text(f"R² = {fmt_stat(stats['r2'])}", size=12, color=ft.Colors.GREY_800),
+                ft.Text(f"F = {fmt_stat(stats['f'])}", size=12, color=ft.Colors.GREY_800),
+                ft.Text(f"n = {stats['n']}", size=12, color=ft.Colors.GREY_800),
+            ],
+            wrap=True,
+            spacing=18,
         )
 
-        return ft.Column([eq_text, chart], spacing=10)
+        return ft.Column([stats_view, chart], spacing=10)
 
     def make_crosstab_table(ct_percent: pd.DataFrame):
         columns = [ft.DataColumn(ft.Text("항목"))]
@@ -233,7 +361,7 @@ def main(page: ft.Page):
         # 1) 범주형 X, 수치형/이진 Y
         if x_kind == "categorical" and y_kind in {"numeric", "binary"}:
             grp = sub.groupby(x_col)[y_col].mean().sort_values(ascending=False)
-            chart = make_bar_chart(grp)
+            chart = make_bar_chart(grp, x_col, f"{y_col} 평균")
 
             content = ft.Column(
                 info_lines + [
@@ -258,11 +386,11 @@ def main(page: ft.Page):
                     return
 
                 agg["x_mid"] = agg["x_bin"].apply(lambda iv: (iv.left + iv.right) / 2)
-                chart = make_line_chart(agg["x_mid"], agg[y_col], y_col)
+                chart = make_line_chart(agg["x_mid"], agg[y_col], x_col, y_col)
                 desc = f"{x_col}를 10개 구간으로 나누어 {y_col} 평균과 회귀선을 표시했습니다."
             else:
                 agg = sub.groupby(x_col)[y_col].mean().reset_index().sort_values(x_col)
-                chart = make_line_chart(agg[x_col], agg[y_col], y_col)
+                chart = make_line_chart(agg[x_col], agg[y_col], x_col, y_col)
                 desc = f"{x_col} 값별 {y_col} 평균과 회귀선을 표시했습니다."
 
             content = ft.Column(
@@ -276,7 +404,7 @@ def main(page: ft.Page):
         # 3) 수치형/이진 X, 범주형 Y
         elif x_kind in {"numeric", "binary"} and y_kind == "categorical":
             grp = sub.groupby(y_col)[x_col].mean().sort_values(ascending=False)
-            chart = make_bar_chart(grp)
+            chart = make_bar_chart(grp, x_col, f"{y_col} 평균")
 
             content = ft.Column(
                 info_lines + [
