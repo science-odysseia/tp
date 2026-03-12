@@ -47,27 +47,16 @@ def main(page: ft.Page):
         groups=[
             fch.BarChartGroup(
                 x=i,
-                rods=[
-                    fch.BarChartRod(from_y=0, to_y=float(v), width=18)
-                ]
+                rods=[fch.BarChartRod(from_y=0, to_y=float(v), width=18)]
             )
             for i, v in enumerate(dept_rate.values)
         ],
         max_y=1,
         bottom_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(value=i, label=ft.Text(n, size=9))
-                for i, n in enumerate(dept_rate.index)
-            ]
+            labels=[fch.ChartAxisLabel(value=i, label=ft.Text(n, size=9)) for i, n in enumerate(dept_rate.index)]
         ),
         left_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(value=0.2, label=ft.Text("0.2")),
-                fch.ChartAxisLabel(value=0.4, label=ft.Text("0.4")),
-                fch.ChartAxisLabel(value=0.6, label=ft.Text("0.6")),
-                fch.ChartAxisLabel(value=0.8, label=ft.Text("0.8")),
-                fch.ChartAxisLabel(value=1.0, label=ft.Text("1.0")),
-            ]
+            labels=[fch.ChartAxisLabel(value=v, label=ft.Text(str(v))) for v in [0.2,0.4,0.6,0.8,1.0]]
         )
     )
 
@@ -87,13 +76,7 @@ def main(page: ft.Page):
             labels=[fch.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(1, 11)]
         ),
         left_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(value=0.2, label=ft.Text("0.2")),
-                fch.ChartAxisLabel(value=0.4, label=ft.Text("0.4")),
-                fch.ChartAxisLabel(value=0.6, label=ft.Text("0.6")),
-                fch.ChartAxisLabel(value=0.8, label=ft.Text("0.8")),
-                fch.ChartAxisLabel(value=1.0, label=ft.Text("1.0")),
-            ]
+            labels=[fch.ChartAxisLabel(value=v, label=ft.Text(str(v))) for v in [0.2,0.4,0.6,0.8,1.0]]
         )
     )
 
@@ -115,13 +98,7 @@ def main(page: ft.Page):
             labels=[fch.ChartAxisLabel(value=x, label=ft.Text(f"{x}%")) for x in range(40, 101, 10)]
         ),
         left_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(value=0.2, label=ft.Text("0.2")),
-                fch.ChartAxisLabel(value=0.4, label=ft.Text("0.4")),
-                fch.ChartAxisLabel(value=0.6, label=ft.Text("0.6")),
-                fch.ChartAxisLabel(value=0.8, label=ft.Text("0.8")),
-                fch.ChartAxisLabel(value=1.0, label=ft.Text("1.0")),
-            ]
+            labels=[fch.ChartAxisLabel(value=v, label=ft.Text(str(v))) for v in [0.2,0.4,0.6,0.8,1.0]]
         )
     )
 
@@ -139,6 +116,7 @@ def main(page: ft.Page):
     gpa_chart = fch.LineChart(
         min_x=0, max_x=9, min_y=0, max_y=4.5,
         data_series=[
+            # 실제 데이터
             fch.LineChartData(
                 points=[
                     fch.LineChartDataPoint(float(r["Study_Hours_per_Day"]), float(r["GPA"]))
@@ -146,8 +124,9 @@ def main(page: ft.Page):
                 ],
                 curved=True,
                 color="blue",
-                name="실제 평균 GPA"
+                stroke_width=2
             ),
+            # 회귀선
             fch.LineChartData(
                 points=[
                     fch.LineChartDataPoint(float(x), float(y))
@@ -155,20 +134,14 @@ def main(page: ft.Page):
                 ],
                 curved=False,
                 color="red",
-                name="선형회귀선"
+                stroke_width=2
             )
         ],
         bottom_axis=fch.ChartAxis(
             labels=[fch.ChartAxisLabel(value=i, label=ft.Text(f"{i}h")) for i in range(0, 10)]
         ),
         left_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(value=0, label=ft.Text("0")),
-                fch.ChartAxisLabel(value=1, label=ft.Text("1")),
-                fch.ChartAxisLabel(value=2, label=ft.Text("2")),
-                fch.ChartAxisLabel(value=3, label=ft.Text("3")),
-                fch.ChartAxisLabel(value=4, label=ft.Text("4")),
-            ]
+            labels=[fch.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(0, 5)]
         )
     )
 
