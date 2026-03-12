@@ -1,7 +1,8 @@
 import flet as ft
 import flet_charts as fch
 import pandas as pd
-##
+import numpy as np
+from sklearn.linear_model import LinearRegression
 
 def main(page: ft.Page):
 
@@ -10,7 +11,8 @@ def main(page: ft.Page):
     page.padding = 20
     page.theme_mode = ft.ThemeMode.LIGHT
 
-    data_path = "/home/scienceodysseia/py_work/data/student_dropout_dataset_v3.csv"
+    # 데이터 경로 (Windows 환경에 맞게 수정)
+    data_path = r".\student_dropout_dataset_v3.csv"
 
     try:
         df = pd.read_csv(data_path)
@@ -26,9 +28,7 @@ def main(page: ft.Page):
     ])
 
     # ---------------- 성별 자퇴 비중 ----------------
-
     gender_dropout = df[df["Dropout"] == 1]["Gender"].value_counts()
-
     pie_chart = fch.PieChart(
         sections=[
             fch.PieChartSection(
@@ -42,37 +42,24 @@ def main(page: ft.Page):
     )
 
     # ---------------- 학과별 자퇴율 ----------------
-
     dept_rate = df.groupby("Department")["Dropout"].mean()
-
     dept_chart = fch.BarChart(
-
         groups=[
             fch.BarChartGroup(
                 x=i,
                 rods=[
-                    fch.BarChartRod(
-                        from_y=0,
-                        to_y=float(v),
-                        width=18
-                    )
+                    fch.BarChartRod(from_y=0, to_y=float(v), width=18)
                 ]
             )
             for i, v in enumerate(dept_rate.values)
         ],
-
         max_y=1,
-
         bottom_axis=fch.ChartAxis(
             labels=[
-                fch.ChartAxisLabel(
-                    value=i,
-                    label=ft.Text(n, size=9)
-                )
+                fch.ChartAxisLabel(value=i, label=ft.Text(n, size=9))
                 for i, n in enumerate(dept_rate.index)
             ]
         ),
-
         left_axis=fch.ChartAxis(
             labels=[
                 fch.ChartAxisLabel(value=0.2, label=ft.Text("0.2")),
@@ -85,38 +72,20 @@ def main(page: ft.Page):
     )
 
     # ---------------- 스트레스 vs 자퇴율 ----------------
-
     df["Stress_Int"] = df["Stress_Index"].round().astype(int)
     stress_rate = df.groupby("Stress_Int")["Dropout"].mean()
-
     stress_chart = fch.BarChart(
-
         groups=[
             fch.BarChartGroup(
                 x=int(k),
-                rods=[
-                    fch.BarChartRod(
-                        from_y=0,
-                        to_y=float(v),
-                        width=15
-                    )
-                ]
+                rods=[fch.BarChartRod(from_y=0, to_y=float(v), width=15)]
             )
             for k, v in stress_rate.items()
         ],
-
         max_y=1,
-
         bottom_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(
-                    value=i,
-                    label=ft.Text(str(i))
-                )
-                for i in range(1, 11)
-            ]
+            labels=[fch.ChartAxisLabel(value=i, label=ft.Text(str(i))) for i in range(1, 11)]
         ),
-
         left_axis=fch.ChartAxis(
             labels=[
                 fch.ChartAxisLabel(value=0.2, label=ft.Text("0.2")),
@@ -129,40 +98,22 @@ def main(page: ft.Page):
     )
 
     # ---------------- 출석률 vs 자퇴율 ----------------
-
     df["Attend_Bin"] = (df["Attendance_Rate"] // 5) * 5
     attend_rate = df.groupby("Attend_Bin")["Dropout"].mean().reset_index()
-
     attend_chart = fch.LineChart(
-
-        min_x=35,
-        max_x=100,
-        min_y=0,
-        max_y=1,
-
+        min_x=35, max_x=100, min_y=0, max_y=1,
         data_series=[
             fch.LineChartData(
                 points=[
-                    fch.LineChartDataPoint(
-                        float(row["Attend_Bin"]),
-                        float(row["Dropout"])
-                    )
+                    fch.LineChartDataPoint(float(row["Attend_Bin"]), float(row["Dropout"]))
                     for _, row in attend_rate.iterrows()
                 ],
                 curved=True
             )
         ],
-
         bottom_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(
-                    value=x,
-                    label=ft.Text(f"{x}%")
-                )
-                for x in range(40, 101, 10)
-            ]
+            labels=[fch.ChartAxisLabel(value=x, label=ft.Text(f"{x}%")) for x in range(40, 101, 10)]
         ),
-
         left_axis=fch.ChartAxis(
             labels=[
                 fch.ChartAxisLabel(value=0.2, label=ft.Text("0.2")),
@@ -174,37 +125,42 @@ def main(page: ft.Page):
         )
     )
 
-    # ---------------- 공부시간 vs GPA ----------------
-
+    # ---------------- 공부시간 vs GPA + 선형회귀 ----------------
     df_agg = df.groupby(df["Study_Hours_per_Day"].round(1))["GPA"].mean().reset_index()
 
+    X = df_agg["Study_Hours_per_Day"].values.reshape(-1, 1)
+    y = df_agg["GPA"].values
+    model = LinearRegression()
+    model.fit(X, y)
+
+    x_range = np.linspace(0, 9, 100).reshape(-1, 1)
+    y_pred = model.predict(x_range)
+
     gpa_chart = fch.LineChart(
-
-        min_x=0,
-        max_x=9,
-        min_y=0,
-        max_y=4.5,
-
+        min_x=0, max_x=9, min_y=0, max_y=4.5,
         data_series=[
             fch.LineChartData(
                 points=[
-                    fch.LineChartDataPoint(
-                        float(r["Study_Hours_per_Day"]),
-                        float(r["GPA"])
-                    )
+                    fch.LineChartDataPoint(float(r["Study_Hours_per_Day"]), float(r["GPA"]))
                     for _, r in df_agg.iterrows()
                 ],
-                curved=True
+                curved=True,
+                color="blue",
+                name="실제 평균 GPA"
+            ),
+            fch.LineChartData(
+                points=[
+                    fch.LineChartDataPoint(float(x), float(y))
+                    for x, y in zip(x_range.flatten(), y_pred)
+                ],
+                curved=False,
+                color="red",
+                name="선형회귀선"
             )
         ],
-
         bottom_axis=fch.ChartAxis(
-            labels=[
-                fch.ChartAxisLabel(value=i, label=ft.Text(f"{i}h"))
-                for i in range(0, 10)
-            ]
+            labels=[fch.ChartAxisLabel(value=i, label=ft.Text(f"{i}h")) for i in range(0, 10)]
         ),
-
         left_axis=fch.ChartAxis(
             labels=[
                 fch.ChartAxisLabel(value=0, label=ft.Text("0")),
@@ -217,41 +173,17 @@ def main(page: ft.Page):
     )
 
     # ---------------- 카드 UI ----------------
-
     def card(title, chart, width=450):
-
         return ft.Container(
-            width=width,
-            height=420,
-            padding=20,
-            border_radius=10,
-            bgcolor="white",
-            content=ft.Column([
-                ft.Text(title, size=18, weight="bold"),
-                chart
-            ])
+            width=width, height=420, padding=20, border_radius=10, bgcolor="white",
+            content=ft.Column([ft.Text(title, size=18, weight="bold"), chart])
         )
 
     page.add(
-
-        ft.Text(
-            "Student Dropout Analysis Dashboard",
-            size=30,
-            weight="bold"
-        ),
-
-        ft.Row([
-            card("자퇴생 성별 비중", pie_chart),
-            card("학과별 자퇴율", dept_chart)
-        ]),
-
-        ft.Row([
-            card("스트레스 vs 자퇴율", stress_chart),
-            card("출석률 vs 자퇴율", attend_chart)
-        ]),
-
-        card("공부시간 vs GPA", gpa_chart, 920)
+        ft.Text("Student Dropout Analysis Dashboard", size=30, weight="bold"),
+        ft.Row([card("자퇴생 성별 비중", pie_chart), card("학과별 자퇴율", dept_chart)]),
+        ft.Row([card("스트레스 vs 자퇴율", stress_chart), card("출석률 vs 자퇴율", attend_chart)]),
+        card("공부시간 vs GPA (선형회귀 포함)", gpa_chart, 920)
     )
-
 
 ft.run(main)
